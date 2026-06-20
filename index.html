@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ibkr-deploy · ops status</title>
+  <style>
+    :root {
+      --bg: #0d1117; --panel: #161b22; --border: #30363d;
+      --fg: #e6edf3; --muted: #8b949e;
+      --ok: #2ea043; --warn: #d29922; --bad: #f85149;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--fg);
+      font: 15px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      padding: 2rem 1rem;
+    }
+    main { max-width: 720px; margin: 0 auto; }
+    h1 { font-size: 1.1rem; margin: 0 0 .25rem; }
+    .sub { color: var(--muted); font-size: .8rem; margin-bottom: 1.5rem; }
+    .banner {
+      padding: .6rem .9rem; border-radius: 6px; margin-bottom: 1.25rem;
+      border: 1px solid var(--border); display: none;
+    }
+    .banner.stale { display: block; background: #2d2200; border-color: var(--warn); color: var(--warn); }
+    .banner.muted { display: block; background: var(--panel); border-color: var(--border); color: var(--muted); }
+    .banner.err   { display: block; background: #2d0a0a; border-color: var(--bad);  color: var(--bad); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; }
+    .card {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 6px; padding: .9rem 1rem;
+    }
+    .card .label { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; }
+    .card .value { font-size: 1.4rem; margin-top: .3rem; }
+    .dot { display: inline-block; width: .7rem; height: .7rem; border-radius: 50%; margin-right: .4rem; vertical-align: middle; }
+    .dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+    .section { margin-top: 1.5rem; }
+    .section h2 { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 0 0 .6rem; }
+    footer { margin-top: 2rem; color: var(--muted); font-size: .72rem; }
+    a { color: #58a6ff; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>ibkr-deploy · ops status</h1>
+    <div class="sub" id="updated">loading…</div>
+
+    <div class="banner" id="banner"></div>
+
+    <div class="section">
+      <h2>Health</h2>
+      <div class="grid" id="health"></div>
+    </div>
+
+    <div class="section">
+      <h2>Counts (since stream window)</h2>
+      <div class="grid" id="counts"></div>
+    </div>
+
+    <footer>
+      Eng/ops telemetry only — no PnL or positions.
+      Source: <a href="https://github.com/jasondolatshahi/ibkr-deploy">ibkr-deploy</a>.
+      Snapshot pushed from the box; this page is static (GitHub Pages).
+    </footer>
+  </main>
+  <script src="app.js"></script>
+  <!-- Page-load analytics (GoatCounter): fires once per document load, so it
+       counts human visits, not app.js's status.json polls. Privacy-friendly,
+       no cookies. Replace REPLACE_ME with your GoatCounter code (the
+       subdomain at https://<code>.goatcounter.com). -->
+  <script data-goatcounter="https://jason137.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
