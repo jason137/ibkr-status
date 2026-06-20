@@ -14,6 +14,7 @@ health + counts, derive staleness client-side. No backend, no PnL.
 | 6  | Wire `session` into the deploy app — add the field to `ibkr-deploy` `status.py` schema + populate it in the status sidecar (the box already knows the schedule; it self-stops on it). Additive, no `v` bump. Until then item 5 renders nothing | |
 | 7  | Page-load analytics — GoatCounter tag in `index.html` (counts human visits, not polls), wired to `jason137`. Dashboard-only, no on-page counter | ✅ |
 | 8  | Init git repo (secret-checked, `.claude/` gitignored), initial commit | ✅ |
+| 9  | Render `gateway.logged_in` (read-only IB handshake = true auth state, vs `reachable` = port open): "logged in" / "no login" / fall back to reachability when null. Graceful when absent | ✅ |
 
 ## Escalation Triggers
 

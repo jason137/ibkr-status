@@ -80,13 +80,15 @@ Consumes `status.json` (schema `v`); the canonical schema lives in
 ```json
 { "v": 1, "generated_at": "2026-06-20T14:00:00Z", "stale_after_s": 900,
   "uptime_s": 3600,
-  "gateway": {"reachable": true, "data_fresh": true, "last_bar_age_s": 45},
+  "gateway": {"reachable": true, "logged_in": true, "data_fresh": true, "last_bar_age_s": 45},
   "redis": {"ok": true},
   "counts": {"orders": 3, "fills": 2, "cancels": 1, "rejects": 0} }
 ```
 
-Optional: `session` (`"rth"`/`"pre"`/`"post"`/`"closed"`) — renders a
-Session card and contextualizes the stale banner. New fields are additive;
-bump `v` only on a breaking change.
+`gateway.logged_in` is the read-only IB-handshake result (true auth state, vs
+`reachable` = port open): `true` → "logged in", `false` → "no login", `null`
+→ falls back to reachability. Optional `session` (`"rth"`/`"pre"`/`"post"`/
+`"closed"`) renders a Session card and contextualizes the stale banner. New
+fields are additive; bump `v` only on a breaking change.
 
 [deploy]: https://github.com/jason137/ibkr-deploy

@@ -66,11 +66,28 @@ function render(snap) {
 
   const g = snap.gateway || {};
   // When the whole snapshot is stale, health dots go warn (unknown), not green.
-  const gw = stale ? "warn" : g.reachable ? (g.data_fresh ? "ok" : "warn") : "bad";
   const rd = stale ? "warn" : snap.redis?.ok ? "ok" : "bad";
 
+  // Gateway: the login probe (g.logged_in) is true auth state, stronger than
+  // bare TCP reachability — "reachable" only means the port is open. When the
+  // probe confirms login we show green even if the feed is idle (off-hours).
+  // logged_in null/absent (probe off or older snapshot) → fall back to reach.
+  let gwVal, gwDot;
+  if (stale) {
+    gwVal = g.reachable ? "reachable" : "down";
+    gwDot = "warn";
+  } else if (!g.reachable) {
+    gwVal = "down"; gwDot = "bad";
+  } else if (g.logged_in === true) {
+    gwVal = "logged in"; gwDot = "ok";
+  } else if (g.logged_in === false) {
+    gwVal = "no login"; gwDot = "bad";        // port open but not authenticated
+  } else {
+    gwVal = "reachable"; gwDot = g.data_fresh ? "ok" : "warn";
+  }
+
   const health = [
-    card("Gateway", g.reachable ? "reachable" : "down", gw),
+    card("Gateway", gwVal, gwDot),
     card("Data feed", g.data_fresh ? "fresh" : "idle", stale ? "warn" : g.data_fresh ? "ok" : "warn"),
     card("Last bar", fmtAge(g.last_bar_age_s), null),
     card("Redis", snap.redis?.ok ? "ok" : "down", rd),
