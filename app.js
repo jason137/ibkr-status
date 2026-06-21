@@ -40,7 +40,8 @@ function render(snap) {
   const stale = ageS > (snap.stale_after_s ?? 900);
 
   $("updated").textContent =
-    `updated ${fmtAge(ageS)} ago · ${snap.generated_at} · schema v${snap.v}`;
+    `updated ${fmtAge(ageS)} ago · up ${fmtAge(snap.uptime_s)} · ` +
+    `${snap.generated_at} · schema v${snap.v}`;
 
   const banner = $("banner");
   if (stale) {
@@ -92,11 +93,11 @@ function render(snap) {
     card("Last bar", fmtAge(g.last_bar_age_s), null),
     card("Redis", snap.redis?.ok ? "ok" : "down", rd),
   ];
-  // Optional session card sits next to Uptime so staleness has context.
+  // Optional session card (RTH/pre/post/closed) for staleness context. Uptime
+  // lives in the header subline, keeping this an even 4-card row.
   if (snap.session != null) {
     health.push(card("Session", sessLabel(snap.session), sessDot(snap.session)));
   }
-  health.push(card("Uptime", fmtAge(snap.uptime_s), null));
   $("health").innerHTML = health.join("");
 
   const c = snap.counts || {};
