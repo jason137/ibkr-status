@@ -7,7 +7,7 @@
 
 // Set this to the Terraform `status_url` output:
 //   cd infra/ec2 && terraform output -raw status_url
-const STATUS_URL = "https://REPLACE_ME.s3.us-east-1.amazonaws.com/status.json";
+const STATUS_URL = "https://ibkr-deploy-status-124382933679.s3.us-east-1.amazonaws.com/status.json";
 
 // How often the page re-fetches. Set to match the box's push cadence
 // (ibkr-deploy [status] interval_s = 300s) — no point polling faster than the

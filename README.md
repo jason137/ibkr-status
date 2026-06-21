@@ -62,10 +62,10 @@ See `docs/plan.md` for the full list. Currently open:
 2. Paste it into `app.js` → `STATUS_URL`.
 3. Push this repo and enable Pages: **Settings → Pages → Deploy from
    branch → `main` / root**. Lives at
-   `https://jasondolatshahi.github.io/ibkr-status/`.
+   `https://jason137.github.io/ibkr-status/`.
 4. Lock CORS to that origin (optional): set `status_allowed_origins`
    in the `ibkr-deploy` tfvars to
-   `["https://jasondolatshahi.github.io"]` and re-apply.
+   `["https://jason137.github.io"]` and re-apply.
 5. Page-load analytics: wired to
    [GoatCounter](https://www.goatcounter.com) (`jason137`) via the
    `data-goatcounter` tag in `index.html`. Counts human visits (one per
