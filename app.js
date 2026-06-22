@@ -87,18 +87,25 @@ function render(snap) {
     gwVal = "reachable"; gwDot = g.data_fresh ? "ok" : "warn";
   }
 
-  const health = [
+  // Services = the box's dependencies (is the plumbing up?). Gateway is the IB
+  // connection, Redis the local store.
+  $("services").innerHTML = [
     card("Gateway", gwVal, gwDot),
+    card("Redis", snap.redis?.ok ? "ok" : "down", rd),
+  ].join("");
+
+  // Market data = is data actually flowing? Last bar age is how feed staleness
+  // is derived, so it pairs with Data feed. Uptime lives in the header subline.
+  const market = [
     card("Data feed", g.data_fresh ? "fresh" : "idle", stale ? "warn" : g.data_fresh ? "ok" : "warn"),
     card("Last bar", fmtAge(g.last_bar_age_s), null),
-    card("Redis", snap.redis?.ok ? "ok" : "down", rd),
   ];
-  // Optional session card (RTH/pre/post/closed) for staleness context. Uptime
-  // lives in the header subline, keeping this an even 4-card row.
+  // Optional session card (RTH/pre/post/closed) — market-data context for the
+  // stale banner. Absent → omitted, behaves as before.
   if (snap.session != null) {
-    health.push(card("Session", sessLabel(snap.session), sessDot(snap.session)));
+    market.push(card("Session", sessLabel(snap.session), sessDot(snap.session)));
   }
-  $("health").innerHTML = health.join("");
+  $("market").innerHTML = market.join("");
 
   const c = snap.counts || {};
   $("counts").innerHTML = [

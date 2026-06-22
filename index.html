@@ -26,7 +26,9 @@
     .banner.stale { display: block; background: #2d2200; border-color: var(--warn); color: var(--warn); }
     .banner.muted { display: block; background: var(--panel); border-color: var(--border); color: var(--muted); }
     .banner.err   { display: block; background: #2d0a0a; border-color: var(--bad);  color: var(--bad); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; }
+    /* auto-fill (not auto-fit) keeps empty tracks, so a short 2-card row holds
+       the same card width as the 4-card rows instead of stretching to fill. */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .75rem; }
     .card {
       background: var(--panel); border: 1px solid var(--border);
       border-radius: 6px; padding: .9rem 1rem;
@@ -49,8 +51,13 @@
     <div class="banner" id="banner"></div>
 
     <div class="section">
-      <h2>Health</h2>
-      <div class="grid" id="health"></div>
+      <h2>Services</h2>
+      <div class="grid" id="services"></div>
+    </div>
+
+    <div class="section">
+      <h2>Market data</h2>
+      <div class="grid" id="market"></div>
     </div>
 
     <div class="section">
@@ -59,9 +66,8 @@
     </div>
 
     <footer>
-      Eng/ops telemetry only — no PnL or positions.
+      Eng/ops telemetry only.
       Source: <a href="https://github.com/jason137/ibkr-deploy">ibkr-deploy</a>.
-      Snapshot pushed from the box; this page is static (GitHub Pages).
     </footer>
   </main>
   <script src="app.js"></script>
