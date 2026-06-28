@@ -18,7 +18,7 @@ const $ = (id) => document.getElementById(id);
 
 // status.json may carry an optional `session` (RTH/pre/post/closed) — see
 // plan item 5. Used as staleness context; absent → omitted, behaves as before.
-const SESSION_LABELS = { rth: "RTH", pre: "pre-market", post: "post-market", closed: "closed" };
+const SESSION_LABELS = { rth: "RTH", pre: "pre-market", post: "post-market", closed: "closed", holiday: "holiday" };
 const sessLabel = (s) => SESSION_LABELS[s] ?? s;
 const sessDot = (s) => (s === "rth" ? "ok" : s === "pre" || s === "post" ? "warn" : null);
 
@@ -35,13 +35,18 @@ function fmtAge(s) {
   return `${(s / 3600).toFixed(1)}h`;
 }
 
+// Compact count for the narrow nowrap cards: 1234 -> "1.2k".
+function fmtCount(n) {
+  if (n == null) return "n/a";
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+}
+
 function render(snap) {
   const ageS = (Date.now() - Date.parse(snap.generated_at)) / 1000;
   const stale = ageS > (snap.stale_after_s ?? 900);
 
   $("updated").textContent =
-    `updated ${fmtAge(ageS)} ago · up ${fmtAge(snap.uptime_s)} · ` +
-    `${snap.generated_at} · schema v${snap.v}`;
+    `updated ${fmtAge(ageS)} ago · up ${fmtAge(snap.uptime_s)} · ${snap.generated_at}`;
 
   const banner = $("banner");
   if (stale) {
@@ -88,23 +93,48 @@ function render(snap) {
   }
 
   // Services = the box's dependencies (is the plumbing up?). Gateway is the IB
-  // connection, Redis the local store.
+  // connection, Redis the local store. The Redis value carries connected_clients
+  // (should equal the running services — a drop flags a dead consumer a bare
+  // ping misses); the dot still carries up/down. Older snapshots without the
+  // diagnostics fall back to "ok".
+  const r = snap.redis || {};
+  const redisVal = !r.ok ? "down" : r.clients != null ? `${r.clients} clients` : "ok";
   $("services").innerHTML = [
     card("Gateway", gwVal, gwDot),
-    card("Redis", snap.redis?.ok ? "ok" : "down", rd),
+    card("Redis", redisVal, rd),
   ].join("");
 
-  // Market data = is data actually flowing? Last bar age is how feed staleness
-  // is derived, so it pairs with Data feed. Uptime lives in the header subline.
-  const market = [
-    card("Data feed", g.data_fresh ? "fresh" : "idle", stale ? "warn" : g.data_fresh ? "ok" : "warn"),
-    card("Last bar", fmtAge(g.last_bar_age_s), null),
-  ];
-  // Optional session card (RTH/pre/post/closed) — market-data context for the
-  // stale banner. Absent → omitted, behaves as before.
+  // Pipeline = which split legs are attached to redis, from the named CLIENT
+  // LIST grouping (redis.consumers). Presence per leg (≥1 conn = up), not the
+  // wobbly exact count — pools grow/shrink with in-flight work. Absent (older
+  // snapshot) → section stays hidden, page behaves as before.
+  const consumers = r.consumers;
+  const pipeSection = $("pipeline-section");
+  if (consumers) {
+    $("pipeline").innerHTML = ["ingest", "signal", "exec"].map((name) => {
+      const up = (consumers[name] || 0) > 0;
+      return card(name, up ? "up" : "down", stale ? "warn" : up ? "ok" : "bad");
+    }).join("");
+    pipeSection.style.display = "";
+  } else {
+    pipeSection.style.display = "none";
+  }
+
+  // Market data = is data actually flowing? Ordered session → feed → tape →
+  // last bar: context first (which session), then the freshness flag, then the
+  // backlog that drives it, then the precise last-bar age. Session/Tape are
+  // optional (absent in older snapshots) → omitted, behaves as before.
+  const market = [];
   if (snap.session != null) {
     market.push(card("Session", sessLabel(snap.session), sessDot(snap.session)));
   }
+  market.push(card("Data feed", g.data_fresh ? "fresh" : "idle", stale ? "warn" : g.data_fresh ? "ok" : "warn"));
+  // Tape backlog = summed XLEN across the tape streams; climbs as ingest lands
+  // bars (the redis-side "data is flowing" signal).
+  if (r.tape_bars != null) {
+    market.push(card("Tape", `${fmtCount(r.tape_bars)} bars`, null));
+  }
+  market.push(card("Last bar", fmtAge(g.last_bar_age_s), null));
   $("market").innerHTML = market.join("");
 
   const c = snap.counts || {};
