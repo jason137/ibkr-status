@@ -111,7 +111,7 @@ function render(snap) {
   const consumers = r.consumers;
   const pipeSection = $("pipeline-section");
   if (consumers) {
-    $("pipeline").innerHTML = ["ingest", "signal", "exec"].map((name) => {
+    $("pipeline").innerHTML = ["signal", "ingest", "exec"].map((name) => {
       const up = (consumers[name] || 0) > 0;
       return card(name, up ? "up" : "down", stale ? "warn" : up ? "ok" : "bad");
     }).join("");
