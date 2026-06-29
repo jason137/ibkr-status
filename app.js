@@ -28,13 +28,13 @@ function card(label, value, dotClass) {
          `<div class="value">${dot}${value}</div></div>`;
 }
 
-// Pipeline leg card: a row of one dot per consumer role + a muted role-label
-// line. The dots ARE the value — each reflects that specific consumer's redis
-// connection presence, so a single dead consumer (e.g. signal:fills) is visible.
-function legCard(name, dotsHtml, labels) {
+// Pipeline leg card: a row of one dot per consumer connection. Each dot carries
+// its role as a hover title (no text label line — 3 labels can't fit a 150px
+// card without shrinking the font / wrapping). A single dead consumer (e.g.
+// signal:fills) reads red while its siblings stay green.
+function legCard(name, dotsHtml) {
   return `<div class="card"><div class="label">${name}</div>` +
-         `<div class="value">${dotsHtml}</div>` +
-         `<div class="sub">${labels}</div></div>`;
+         `<div class="value">${dotsHtml}</div></div>`;
 }
 
 // The split legs and their individual consumer connections, keyed by the redis
@@ -138,11 +138,12 @@ function render(snap) {
   const pipeSection = $("pipeline-section");
   if (consumers) {
     $("pipeline").innerHTML = PIPELINE_LEGS.map(({ name, roles }) => {
-      const dots = roles.map(({ key }) => {
+      const dots = roles.map(({ label, key }) => {
         const up = (consumers[key] || 0) > 0;
-        return `<span class="dot ${stale ? "warn" : up ? "ok" : "bad"}"></span>`;
+        const cls = stale ? "warn" : up ? "ok" : "bad";
+        return `<span class="dot ${cls}" title="${label}"></span>`;
       }).join("");
-      return legCard(name, dots, roles.map((x) => x.label).join(" · "));
+      return legCard(name, dots);
     }).join("");
     pipeSection.style.display = "";
   } else {

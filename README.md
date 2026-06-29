@@ -94,7 +94,7 @@ Consumes `status.json`; the canonical schema lives in
 Redis card value; `redis.tape_bars` (summed tape-stream backlog, the "data is
 flowing" signal) renders a Tape card. `redis.consumers` (per-connection counts,
 grouped by `CLIENT SETNAME`) drives the **Pipeline** row — one card per split leg
-with **one dot per consumer connection**: `signal` shows three
+with **one dot per consumer connection** (role on hover): `signal` shows three
 (`signal:tape`/`:fills`/`:targets`), `ingest` and `exec` one each. A dead
 consumer reads red while its siblings stay green. `status` is excluded — it's the
 observer that publishes the snapshot, so its liveness is the page's own freshness.
