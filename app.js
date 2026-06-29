@@ -28,23 +28,29 @@ function card(label, value, dotClass) {
          `<div class="value">${dot}${value}</div></div>`;
 }
 
-// Pipeline card variant: adds a muted sub-line for the leg's consumer roles.
-function pipeCard(label, value, dotClass, sub) {
-  const dot = dotClass ? `<span class="dot ${dotClass}"></span>` : "";
-  return `<div class="card"><div class="label">${label}</div>` +
-         `<div class="value">${dot}${value}</div>` +
-         `<div class="sub">${sub}</div></div>`;
+// Pipeline leg card: a row of one dot per consumer role + a muted role-label
+// line. The dots ARE the value — each reflects that specific consumer's redis
+// connection presence, so a single dead consumer (e.g. signal:fills) is visible.
+function legCard(name, dotsHtml, labels) {
+  return `<div class="card"><div class="label">${name}</div>` +
+         `<div class="value">${dotsHtml}</div>` +
+         `<div class="sub">${labels}</div></div>`;
 }
 
-// The split legs and their expected redis consumer connections. signal gathers
-// three blocking XREADGROUP loops (tape/fills/targets), each on its own pooled
-// connection; ingest is the single tape writer; exec the single orders consumer.
-// `status` is NOT here — it's the observer that publishes this snapshot, so a
-// fresh page already proves it's up (a dead status → stale banner).
+// The split legs and their individual consumer connections, keyed by the redis
+// CLIENT SETNAME each one sets. signal runs three distinct blocking consumers
+// (signal:tape / :fills / :targets) → three lights; ingest is the lone tape
+// writer, exec the lone orders consumer → one light each. `status` is NOT a leg
+// — it's the observer that publishes this snapshot, so a fresh page already
+// proves it's up (a dead status → stale banner).
 const PIPELINE_LEGS = [
-  { name: "ingest", expect: 1, roles: "tape-writer" },
-  { name: "signal", expect: 3, roles: "tape · fills · targets" },
-  { name: "exec", expect: 1, roles: "orders" },
+  { name: "ingest", roles: [{ label: "tape-writer", key: "ingest" }] },
+  { name: "signal", roles: [
+    { label: "tape", key: "signal:tape" },
+    { label: "fills", key: "signal:fills" },
+    { label: "targets", key: "signal:targets" },
+  ] },
+  { name: "exec", roles: [{ label: "orders", key: "exec" }] },
 ];
 
 function fmtAge(s) {
@@ -124,19 +130,19 @@ function render(snap) {
   ].join("");
 
   // Pipeline = the split legs broken out from the named CLIENT LIST grouping
-  // (redis.consumers). Each leg shows live conn count vs expected + its consumer
-  // roles. count<expected ⇒ a consumer dropped (warn); 0 ⇒ down (bad). count can
-  // briefly exceed expected (a transient publish checks out an extra pooled
-  // conn) — that's still healthy. Absent (older snapshot) → section hidden.
+  // (redis.consumers). One dot per consumer connection (presence: ≥1 conn = up),
+  // so a single dead consumer shows red while its siblings stay green. Absent
+  // (older snapshot, or before the per-role naming deploy) → that role reads
+  // down. Section hidden entirely if consumers is absent.
   const consumers = r.consumers;
   const pipeSection = $("pipeline-section");
   if (consumers) {
-    $("pipeline").innerHTML = PIPELINE_LEGS.map(({ name, expect, roles }) => {
-      const n = consumers[name] || 0;
-      const up = n > 0;
-      const degraded = up && n < expect;
-      const dot = stale ? "warn" : !up ? "bad" : degraded ? "warn" : "ok";
-      return pipeCard(name, up ? `${n}/${expect}` : "down", dot, roles);
+    $("pipeline").innerHTML = PIPELINE_LEGS.map(({ name, roles }) => {
+      const dots = roles.map(({ key }) => {
+        const up = (consumers[key] || 0) > 0;
+        return `<span class="dot ${stale ? "warn" : up ? "ok" : "bad"}"></span>`;
+      }).join("");
+      return legCard(name, dots, roles.map((x) => x.label).join(" · "));
     }).join("");
     pipeSection.style.display = "";
   } else {

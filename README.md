@@ -82,8 +82,9 @@ Consumes `status.json`; the canonical schema lives in
 { "generated_at": "2026-06-20T14:00:00Z", "stale_after_s": 900,
   "uptime_s": 3600,
   "gateway": {"reachable": true, "logged_in": true, "data_fresh": true, "last_bar_age_s": 45},
-  "redis": {"ok": true, "tape_bars": 1234, "clients": 5,
-            "consumers": {"ingest": 1, "signal": 2, "exec": 1, "status": 1}},
+  "redis": {"ok": true, "tape_bars": 1234, "clients": 6,
+            "consumers": {"ingest": 1, "signal:tape": 1, "signal:fills": 1,
+                          "signal:targets": 1, "exec": 1, "status": 1}},
   "counts": {"orders": 3, "fills": 2, "cancels": 1, "rejects": 0} }
 ```
 
@@ -91,13 +92,13 @@ Consumes `status.json`; the canonical schema lives in
 `reachable` = port open): `true` → "logged in", `false` → "no login", `null`
 → falls back to reachability. `redis.clients` (total connections) is the
 Redis card value; `redis.tape_bars` (summed tape-stream backlog, the "data is
-flowing" signal) renders a Tape card. `redis.consumers` (per-service connection
-counts, grouped by `CLIENT SETNAME`) drives the **Pipeline** row — one card per
-split leg (`ingest`/`signal`/`exec`) showing live conn count vs expected + its
-consumer roles (e.g. `signal 3/3 · tape · fills · targets`). `count<expected` ⇒
-a dropped consumer (warn); `0` ⇒ down. `status` is intentionally excluded — it's
-the observer that publishes the snapshot, so its liveness is the page's own
-freshness. The row hides if the field is absent. Optional `session` (`"rth"`/`"pre"`/`"post"`/`"closed"`)
+flowing" signal) renders a Tape card. `redis.consumers` (per-connection counts,
+grouped by `CLIENT SETNAME`) drives the **Pipeline** row — one card per split leg
+with **one dot per consumer connection**: `signal` shows three
+(`signal:tape`/`:fills`/`:targets`), `ingest` and `exec` one each. A dead
+consumer reads red while its siblings stay green. `status` is excluded — it's the
+observer that publishes the snapshot, so its liveness is the page's own freshness.
+The row hides if the field is absent. Optional `session` (`"rth"`/`"pre"`/`"post"`/`"closed"`)
 renders a Session card and contextualizes the stale banner. All fields are
 additive; the page degrades gracefully on any it doesn't recognize or omits.
 
