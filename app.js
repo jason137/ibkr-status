@@ -28,6 +28,25 @@ function card(label, value, dotClass) {
          `<div class="value">${dot}${value}</div></div>`;
 }
 
+// Pipeline card variant: adds a muted sub-line for the leg's consumer roles.
+function pipeCard(label, value, dotClass, sub) {
+  const dot = dotClass ? `<span class="dot ${dotClass}"></span>` : "";
+  return `<div class="card"><div class="label">${label}</div>` +
+         `<div class="value">${dot}${value}</div>` +
+         `<div class="sub">${sub}</div></div>`;
+}
+
+// The split legs and their expected redis consumer connections. signal gathers
+// three blocking XREADGROUP loops (tape/fills/targets), each on its own pooled
+// connection; ingest is the single tape writer; exec the single orders consumer.
+// `status` is NOT here — it's the observer that publishes this snapshot, so a
+// fresh page already proves it's up (a dead status → stale banner).
+const PIPELINE_LEGS = [
+  { name: "ingest", expect: 1, roles: "tape-writer" },
+  { name: "signal", expect: 3, roles: "tape · fills · targets" },
+  { name: "exec", expect: 1, roles: "orders" },
+];
+
 function fmtAge(s) {
   if (s == null) return "n/a";
   if (s < 90) return `${Math.round(s)}s`;
@@ -104,16 +123,20 @@ function render(snap) {
     card("Redis", redisVal, rd),
   ].join("");
 
-  // Pipeline = which split legs are attached to redis, from the named CLIENT
-  // LIST grouping (redis.consumers). Presence per leg (≥1 conn = up), not the
-  // wobbly exact count — pools grow/shrink with in-flight work. Absent (older
-  // snapshot) → section stays hidden, page behaves as before.
+  // Pipeline = the split legs broken out from the named CLIENT LIST grouping
+  // (redis.consumers). Each leg shows live conn count vs expected + its consumer
+  // roles. count<expected ⇒ a consumer dropped (warn); 0 ⇒ down (bad). count can
+  // briefly exceed expected (a transient publish checks out an extra pooled
+  // conn) — that's still healthy. Absent (older snapshot) → section hidden.
   const consumers = r.consumers;
   const pipeSection = $("pipeline-section");
   if (consumers) {
-    $("pipeline").innerHTML = ["ingest", "signal", "exec"].map((name) => {
-      const up = (consumers[name] || 0) > 0;
-      return card(name, up ? "up" : "down", stale ? "warn" : up ? "ok" : "bad");
+    $("pipeline").innerHTML = PIPELINE_LEGS.map(({ name, expect, roles }) => {
+      const n = consumers[name] || 0;
+      const up = n > 0;
+      const degraded = up && n < expect;
+      const dot = stale ? "warn" : !up ? "bad" : degraded ? "warn" : "ok";
+      return pipeCard(name, up ? `${n}/${expect}` : "down", dot, roles);
     }).join("");
     pipeSection.style.display = "";
   } else {

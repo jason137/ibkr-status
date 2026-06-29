@@ -92,9 +92,12 @@ Consumes `status.json`; the canonical schema lives in
 → falls back to reachability. `redis.clients` (total connections) is the
 Redis card value; `redis.tape_bars` (summed tape-stream backlog, the "data is
 flowing" signal) renders a Tape card. `redis.consumers` (per-service connection
-counts, grouped by `CLIENT SETNAME`) drives the **Pipeline** row — a presence
-dot per split leg (`ingest`/`signal`/`exec`), so a dead leg is visible rather
-than buried in the total; the row hides if the field is absent. Optional `session` (`"rth"`/`"pre"`/`"post"`/`"closed"`)
+counts, grouped by `CLIENT SETNAME`) drives the **Pipeline** row — one card per
+split leg (`ingest`/`signal`/`exec`) showing live conn count vs expected + its
+consumer roles (e.g. `signal 3/3 · tape · fills · targets`). `count<expected` ⇒
+a dropped consumer (warn); `0` ⇒ down. `status` is intentionally excluded — it's
+the observer that publishes the snapshot, so its liveness is the page's own
+freshness. The row hides if the field is absent. Optional `session` (`"rth"`/`"pre"`/`"post"`/`"closed"`)
 renders a Session card and contextualizes the stale banner. All fields are
 additive; the page degrades gracefully on any it doesn't recognize or omits.
 
